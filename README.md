@@ -5,4 +5,4 @@ Scraping with selenium (example "electrician contact in paris")
 I use website: http://www.allo-reparateurs.fr to find what I need.
 
 ## search_like_dog("plombier", "75009")
-The output is a csv file, for personal of commercial purpose. 
+The output is a csv file, for personal or commercial purpose. 
