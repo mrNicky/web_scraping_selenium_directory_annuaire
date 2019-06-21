@@ -2,11 +2,14 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select
 from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.support import expected_conditions as EC
 import csv
 
 
 def repair_by_spe():
-    #--- Return all type of repairers you can scrape in http://www.allo-reparateurs.fr
+        #--- Return all type of repairers you can scrape in http://www.allo-reparateurs.fr
     spe = webdriver.Firefox(executable_path=r'/home/zack/Bureau/jupyter/web_scraping/geckodriver')
     spe.get("http://www.allo-reparateurs.fr/specialites/")
     liste_spe = []
@@ -30,20 +33,38 @@ def search_like_dog(what, where):
     ville.click()
     ville.send_keys(where)
     ville.submit()
-
-    browser.implicitly_wait(15)
+    browser.implicitly_wait(5)
 
     #--- Save infos in dict ---
     dic = {"reparateur": [], "adresse": [], "numero": []}
-    i= 2
-    while True:
+    p= 2
+    while True:# les pages 1, 2, 3, 4
         try:
-            dic["reparateur"] += [i.text for i in browser.find_elements_by_class_name('pro')]
-            dic["adresse"] += [i.text[19:] for i in browser.find_elements_by_class_name('adress')]
-            dic["numero"] += [i.text for i in browser.find_elements_by_class_name('liste_tel') if i.text != ""]
-            page = browser.find_element_by_link_text(str(i))
+            element = len(browser.find_elements_by_class_name('pro'))
+
+            for i in range(element):
+                browser.find_elements_by_class_name('pro')[i].click()
+                browser.implicitly_wait(3)
+                try:
+                    WebDriverWait(browser, 3).until(EC.alert_is_present(),
+                                               'Timed out waiting for PA creation ' +
+                                               'confirmation popup to appear.')
+                    alert = browser.switch_to.alert
+                    alert.accept()
+                    print("alert accepted")
+                except TimeoutException:
+                    print("no alert")
+
+                dic['reparateur'] += [(browser.find_element_by_class_name('fiche')).text]
+                dic['adresse'] += [(browser.find_element_by_class_name('adress')).text]
+                dic['numero'] += [(browser.find_element_by_class_name('liste_tel')).text]
+                print(dic)
+                browser.back()
+                browser.implicitly_wait(2)
+            page = browser.find_element_by_link_text(str(p)) #page 2, 3, 4
             page.click()
-            i+=1
+            p +=1
+
         except NoSuchElementException:
             #--- Save infos in csv file ---
             with open('reparateur.csv', 'w') as f:
@@ -51,7 +72,6 @@ def search_like_dog(what, where):
                 f.writerow(dic.keys())
                 f.writerows(zip(*dic.values()))
             browser.close()
+            print("FINISH")
             break
-
-repair_by_spe()
-search_like_dog("plombier", "75009")
+search_like_dog("plombier", "75013")
